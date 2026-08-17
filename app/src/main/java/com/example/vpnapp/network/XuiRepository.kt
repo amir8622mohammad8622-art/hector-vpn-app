@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -71,7 +72,7 @@ class XuiRepository(private val panelBaseUrl: String) {
                 val network = streamJson?.get("network")?.asString ?: "tcp"
                 val security = streamJson?.get("security")?.asString ?: "none"
 
-                val panelHost = HttpUrl.parse(panelBaseUrl)?.host ?: return@mapNotNull null
+                val panelHost = panelBaseUrl.toHttpUrlOrNull()?.host ?: return@mapNotNull null
 
                 ParsedServer(
                     inboundId = inbound.id,
