@@ -1,7 +1,7 @@
 package com.example.vpnapp.vpn
 
 import android.content.Context
-import com.example.vpnapp.network.ParsedServer
+import com.example.vpnapp.network.SubServer
 import com.example.vpnapp.network.XrayConfigBuilder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +31,7 @@ class XrayManager(private val context: Context) {
 
     private var currentConfigJson: String? = null
 
-    fun connect(server: ParsedServer) {
+    fun connect(server: SubServer) {
         _state.value = VpnConnectionState.CONNECTING
         try {
             val configJson = XrayConfigBuilder.buildClientConfigJson(server)

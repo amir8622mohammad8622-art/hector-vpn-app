@@ -1,21 +1,28 @@
 package com.example.vpnapp
 
 import android.app.Application
+import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.vpnapp.network.ParsedServer
-import com.example.vpnapp.network.XuiRepository
+import com.example.vpnapp.network.BackendRepository
+import com.example.vpnapp.network.SubServer
 import com.example.vpnapp.vpn.VpnConnectionState
 import com.example.vpnapp.vpn.XrayManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class AppUiState(
     val isLoading: Boolean = false,
+    val isGuestLoading: Boolean = false,
     val errorMessage: String? = null,
-    val servers: List<ParsedServer> = emptyList(),
-    val selectedServer: ParsedServer? = null
+    val servers: List<SubServer> = emptyList(),
+    val selectedServer: SubServer? = null,
+    val username: String? = null,
+    val usedBytes: Long = 0,
+    val totalBytes: Long = 0
 )
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
@@ -26,43 +33,65 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(AppUiState())
     val uiState: StateFlow<AppUiState> = _uiState
 
-    private var repository: XuiRepository? = null
+    /**
+     * شناسه‌ی شبه‌دائمی دستگاه — برای محدودیت «هر دستگاه فقط یه‌بار مهمان».
+     * این مقدار با پاک نصب دوباره‌ی اپ عوض نمیشه (فقط با ریست کارخانه یا تغییر امضای اپ).
+     */
+    private fun getDeviceId(): String {
+        return Settings.Secure.getString(
+            getApplication<Application>().contentResolver,
+            Settings.Secure.ANDROID_ID
+        ) ?: "unknown-device"
+    }
 
-    /** آدرس پنل رو نرمالایز می‌کنه تا حتماً با / تموم بشه (چون Retrofit اینو لازم داره) */
-    private fun normalizeUrl(url: String): String =
-        if (url.endsWith("/")) url else "$url/"
-
-    fun login(panelUrl: String, username: String, password: String, onSuccess: () -> Unit) {
+    fun login(username: String, password: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            try {
-                val repo = XuiRepository(normalizeUrl(panelUrl))
-                val loggedIn = repo.login(username, password)
-                if (!loggedIn) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "ورود ناموفق بود — یوزرنیم/پسورد یا آدرس پنل رو چک کن"
-                    )
-                    return@launch
-                }
-                repository = repo
-                val servers = repo.fetchServers()
+            val result = withContext(Dispatchers.IO) { BackendRepository.login(username, password) }
+            result.onSuccess { loginResult ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    servers = servers,
-                    selectedServer = servers.firstOrNull()
+                    username = loginResult.username,
+                    servers = loginResult.servers,
+                    selectedServer = loginResult.servers.firstOrNull(),
+                    usedBytes = loginResult.usedBytes,
+                    totalBytes = loginResult.totalBytes
                 )
                 onSuccess()
-            } catch (e: Exception) {
+            }.onFailure { e ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "خطا در اتصال به پنل: ${e.message}"
+                    errorMessage = e.message ?: "خطا در ورود"
                 )
             }
         }
     }
 
-    fun selectServer(server: ParsedServer) {
+    fun loginAsGuest(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isGuestLoading = true, errorMessage = null)
+            val deviceId = getDeviceId()
+            val result = withContext(Dispatchers.IO) { BackendRepository.loginAsGuest(deviceId) }
+            result.onSuccess { loginResult ->
+                _uiState.value = _uiState.value.copy(
+                    isGuestLoading = false,
+                    username = loginResult.username,
+                    servers = loginResult.servers,
+                    selectedServer = loginResult.servers.firstOrNull(),
+                    usedBytes = loginResult.usedBytes,
+                    totalBytes = loginResult.totalBytes
+                )
+                onSuccess()
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isGuestLoading = false,
+                    errorMessage = e.message ?: "خطا در ساخت اکانت مهمان"
+                )
+            }
+        }
+    }
+
+    fun selectServer(server: SubServer) {
         _uiState.value = _uiState.value.copy(selectedServer = server)
     }
 

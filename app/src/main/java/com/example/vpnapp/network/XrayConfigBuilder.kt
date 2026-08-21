@@ -3,20 +3,12 @@ package com.example.vpnapp.network
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
-/**
- * از روی یه [ParsedServer] (که از پنل سنایی گرفتیم) یه کانفیگ کامل Xray می‌سازه.
- * این JSON دقیقاً همون فرمتیه که Xray-core (چه در دسکتاپ چه موبایل) به عنوان
- * فایل کانفیگ قبول می‌کنه: { "inbounds": [...], "outbounds": [...] }
- *
- * فعلاً VLESS و VMess پوشش داده شده (پرکاربردترین حالت‌ها در پنل‌های x-ui).
- * برای Trojan/Shadowsocks باید یه branch مشابه اضافه کنی.
- */
+/** از روی یه [SubServer] (که از لینک subscription پارس شده) کانفیگ کامل Xray می‌سازه */
 object XrayConfigBuilder {
 
-    fun buildClientConfigJson(server: ParsedServer): String {
+    fun buildClientConfigJson(server: SubServer): String {
         val root = JsonObject()
 
-        // inbound محلی روی گوشی — پروکسی SOCKS داخلی که Xray برای اپلیکیشن‌ها فراهم می‌کنه
         val inbounds = JsonArray()
         val socksInbound = JsonObject().apply {
             addProperty("tag", "socks-in")
@@ -38,7 +30,7 @@ object XrayConfigBuilder {
         return root.toString()
     }
 
-    private fun buildProxyOutbound(server: ParsedServer): JsonObject {
+    private fun buildProxyOutbound(server: SubServer): JsonObject {
         val outbound = JsonObject()
         outbound.addProperty("tag", "proxy")
         outbound.addProperty("protocol", server.protocol)
@@ -51,10 +43,8 @@ object XrayConfigBuilder {
         }
         val users = JsonArray()
         val user = JsonObject().apply {
-            addProperty("id", server.clientId)
-            if (server.protocol == "vless") {
-                addProperty("encryption", "none")
-            }
+            addProperty("id", server.id)
+            if (server.protocol == "vless") addProperty("encryption", "none")
         }
         users.add(user)
         serverEntry.add("users", users)
@@ -65,11 +55,8 @@ object XrayConfigBuilder {
         val streamSettings = JsonObject()
         streamSettings.addProperty("network", server.network)
         streamSettings.addProperty("security", server.security)
-        // تنظیمات دقیق tls/reality/ws-path و ... رو مستقیم از پنل کپی می‌کنیم
-        server.rawStreamSettings?.let { raw ->
-            raw.entrySet().forEach { (key, value) ->
-                if (!streamSettings.has(key)) streamSettings.add(key, value)
-            }
+        server.rawStreamSettings.entrySet().forEach { (key, value) ->
+            streamSettings.add(key, value)
         }
         outbound.add("streamSettings", streamSettings)
 

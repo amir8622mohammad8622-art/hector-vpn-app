@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,17 +21,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.vpnapp.network.ParsedServer
+import com.example.vpnapp.network.SubServer
 import com.example.vpnapp.ui.theme.*
 import com.example.vpnapp.vpn.VpnConnectionState
 import kotlin.math.min
 
 @Composable
 fun HomeScreen(
-    selectedServer: ParsedServer?,
+    selectedServer: SubServer?,
     connectionState: VpnConnectionState,
     onToggleConnect: () -> Unit,
-    onOpenServerList: () -> Unit
+    onOpenServerList: () -> Unit,
+    onOpenSettings: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -37,6 +41,40 @@ fun HomeScreen(
             .background(BackgroundDark)
             .padding(20.dp)
     ) {
+        // نوار بالا — آیکون منو (☰) و زنگ اعلان، مشابه عکس اپ نمونه
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(CardDark)
+                        .clickable(onClick = onOpenSettings),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.Menu, contentDescription = null, tint = Color.White)
+                }
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(CardDark)
+                        .clickable(onClick = onOpenNotifications),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.Notifications, contentDescription = null, tint = Color.White)
+                }
+            }
+            Text("HECTOR VPN", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        }
+
+        Spacer(Modifier.height(18.dp))
+
         // کارت وضعیت اکانت رایگان — مشابه عکس
         Box(
             modifier = Modifier

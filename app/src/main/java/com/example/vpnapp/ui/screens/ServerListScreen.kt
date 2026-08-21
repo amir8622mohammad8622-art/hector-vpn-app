@@ -16,21 +16,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.vpnapp.network.ParsedServer
+import com.example.vpnapp.network.SubServer
+import com.example.vpnapp.ui.theme.AccentGreen
 import com.example.vpnapp.ui.theme.BackgroundDark
 import com.example.vpnapp.ui.theme.CardDark
 import com.example.vpnapp.ui.theme.TextSecondary
 
 @Composable
 fun ServerListScreen(
-    servers: List<ParsedServer>,
+    servers: List<SubServer>,
     onBack: () -> Unit,
-    onServerSelected: (ParsedServer) -> Unit
+    onServerSelected: (SubServer) -> Unit,
+    onTestAllServers: () -> Unit = {},
+    onAutoSelectBest: () -> Unit = {}
 ) {
     var query by remember { mutableStateOf("") }
+    var showInfoDialog by remember { mutableStateOf(true) }
     val filtered = servers.filter { it.remark.contains(query, ignoreCase = true) }
+
+    // دیالوگ راهنما — دقیقاً مطابق اپ نمونه، اولین بار که این صفحه باز میشه نشون داده میشه
+    if (showInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showInfoDialog = false },
+            title = { Text("سرور های مختلف") },
+            text = {
+                Text("کاربران گرامی، بخش لیست سرور ها میتونین به بقیه سرور ها متصل بشین و فقط وابسته به یک سرور نیست.")
+            },
+            confirmButton = {
+                TextButton(onClick = { showInfoDialog = false }) { Text("بستن") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showInfoDialog = false }) { Text("دیگر نشان نده") }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -43,7 +65,7 @@ fun ServerListScreen(
                 Icon(Icons.Filled.ArrowBack, contentDescription = null, tint = Color.White)
             }
             Spacer(Modifier.weight(1f))
-            Text("اینباندهای پنل", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("لوکیشن سرورها", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
             Spacer(Modifier.width(40.dp))
         }
@@ -59,6 +81,45 @@ fun ServerListScreen(
             shape = RoundedCornerShape(14.dp),
             singleLine = true
         )
+
+        Spacer(Modifier.height(14.dp))
+
+        // دکمه تست همه سرورها
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color.Transparent)
+                .then(Modifier)
+        ) {
+            OutlinedButton(
+                onClick = onTestAllServers,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AccentGreen)
+            ) {
+                Text("تست همه سرورها", color = AccentGreen)
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        // دکمه انتخاب بهترین لوکیشن خودکار
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(Color(0xFF22D3C5), Color(0xFF8B5CF6))
+                    )
+                )
+                .clickable(onClick = onAutoSelectBest)
+                .padding(vertical = 14.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text("انتخاب بهترین لوکیشن خودکار", color = Color.White, fontWeight = FontWeight.Bold)
+        }
 
         Spacer(Modifier.height(20.dp))
 
@@ -79,7 +140,7 @@ fun ServerListScreen(
 }
 
 @Composable
-private fun ServerRow(server: ParsedServer, onClick: () -> Unit) {
+private fun ServerRow(server: SubServer, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -91,12 +152,12 @@ private fun ServerRow(server: ParsedServer, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text(server.protocol.uppercase(), color = Color(0xFF4ADE80), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("رایگان", color = Color(0xFF4ADE80), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text("${server.network} / ${server.security}", color = TextSecondary, fontSize = 11.sp)
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(server.remark, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Text("پورت ${server.port}", color = TextSecondary, fontSize = 12.sp)
+            Text("${server.protocol.uppercase()} · پورت ${server.port}", color = TextSecondary, fontSize = 12.sp)
         }
     }
 }
