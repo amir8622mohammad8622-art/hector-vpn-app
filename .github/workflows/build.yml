@@ -48,16 +48,23 @@ jobs:
         if: env.HAS_SIGNING != 'true'
         run: gradle assembleDebug --no-daemon --stacktrace
 
+      - name: Debug - list actual output files
+        run: find app/build/outputs -type f -name "*.apk" -o -type f -name "*.txt" | xargs -I{} echo FOUND: {}
+
       - name: Upload release APK
         if: env.HAS_SIGNING == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: hector-vpn-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          path: |
+            app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
 
       - name: Upload debug APK
         if: env.HAS_SIGNING != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: hector-vpn-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
