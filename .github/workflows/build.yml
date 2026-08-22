@@ -49,7 +49,8 @@ jobs:
         run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Debug - list actual output files
-        run: find app/build/outputs -type f -name "*.apk" -o -type f -name "*.txt" | xargs -I{} echo FOUND: {}
+        run: |
+          find app/build/outputs -type f \( -name "*.apk" -o -name "*.txt" \) -print
 
       - name: Upload release APK
         if: env.HAS_SIGNING == 'true'
