@@ -40,7 +40,7 @@ jobs:
       - name: Build release APK (signed)
         if: env.HAS_SIGNING == 'true'
         env:
-          SIGNING_KEYSTORE_PATH: release.keystore
+          SIGNING_KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
           SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
